@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspección de Contenedor – Omnilife</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f4f8; color: #222; }
+
+    .header {
+      background: #1a5276;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .header img { height: 36px; }
+    .header-text h1 { font-size: 15px; font-weight: bold; }
+    .header-text p { font-size: 11px; opacity: 0.8; }
+
+    .container { max-width: 700px; margin: 0 auto; padding: 16px; }
+
+    h3 {
+      color: #1a5276;
+      border-bottom: 2px solid #1a5276;
+      padding-bottom: 6px;
+      margin: 24px 0 14px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 5px; }
+    .req { color: #e74c3c; margin-left: 3px; }
+    .input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      appearance: auto;
+    }
+    .input:focus { outline: none; border-color: #1a5276; box-shadow: 0 0 0 2px rgba(26,82,118,0.15); }
+
+    /* Radio SI/NO */
+    .field-sino label { font-size: 12px; }
+    .radio-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .radio-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .radio-btn input { display: none; }
+    .btn-si { background: #d5f5e3; color: #1e8449; border-color: #a9dfbf; }
+    .btn-no { background: #fadbd8; color: #c0392b; border-color: #f1948a; }
+    .btn-nd { background: #fef9e7; color: #b7950b; border-color: #f7dc6f; }
+    .radio-btn:has(input:checked) { filter: brightness(0.85); box-shadow: 0 0 0 2px currentColor; }
+
+    /* Fotos */
+    .field-foto { background: #f8f9fa; border: 1px dashed #aab; border-radius: 8px; padding: 12px; }
+    .foto-btns { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-foto {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-camara { background: #1a5276; color: white; }
+    .btn-galeria { background: #white; color: #1a5276; border: 2px solid #1a5276; }
+    .file-hidden { display: none; }
+    .foto-preview { margin-top: 8px; }
+    .foto-preview img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; }
+
+    /* Submit */
+    .submit-area { margin: 30px 0 50px; text-align: center; }
+    .btn-submit {
+      background: #1a5276;
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 400px;
+    }
+    .btn-submit:disabled { background: #888; cursor: not-allowed; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #1e8449; color: white; padding: 12px 24px;
+      border-radius: 8px; font-size: 14px; display: none; z-index: 999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .progress { display: none; margin-top: 12px; font-size: 13px; color: #555; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-text">
+    <h1>OMNILIFE</h1>
+    <p>Sistema de Inspección de Contenedores</p>
+  </div>
+</div>
+
+<div class="container">
+  <form id="formInspeccion" enctype="multipart/form-data">
+
+    <h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">📋 INFORMACIÓN GENERAL</h3>
+<div class="field">
+      <label for="Fecha_de_Inspección">Fecha de Inspección <span class="req">*</span></label>
+      <input type="date" id="Fecha_de_Inspección" name="Fecha de Inspección" required class="input">
+    </div>
+<div class="field">
+      <label for="No_Exportación">No. Exportación <span class="req">*</span></label>
+      <input type="text" id="No_Exportación" name="No. Exportación" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Fecha_Ingreso_Contenedor_a_Planta">Fecha Ingreso Contenedor a Planta <span class="req">*</span></label>
+      <input type="date" id="Fecha_Ingreso_Contenedor_a_Planta" name="Fecha Ingreso Contenedor a Planta" required class="input">
+    </div>
+<div class="field">
+      <label for="Tipo_de_Contenedor">Tipo de Contenedor <span class="req">*</span></label>
+      <select id="Tipo_de_Contenedor" name="Tipo de Contenedor" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="20 pies" >20 pies</option>
+<option value="40 pies" >40 pies</option>
+<option value="40 pies HC" >40 pies HC</option>
+<option value="Otro" >Otro</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="Hora_Ingreso_Contenedor_a_Planta">Hora Ingreso Contenedor a Planta <span class="req">*</span></label>
+      <select id="Hora_Ingreso_Contenedor_a_Planta" name="Hora Ingreso Contenedor a Planta" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="00:00" >00:00</option>
+<option value="00:30" >00:30</option>
+<option value="01:00" >01:00</option>
+<option value="01:30" >01:30</option>
+<option value="02:00" >02:00</option>
+<option value="02:30" >02:30</option>
+<option value="03:00" >03:00</option>
+<option value="03:30" >03:30</option>
+<option value="04:00" >04:00</option>
+<option value="04:30" >04:30</option>
+<option value="05:00" >05:00</option>
+<option value="05:30" >05:30</option>
+<option value="06:00" >06:00</option>
+<option value="06:30" >06:30</option>
+<option value="07:00" >07:00</option>
+<option value="07:30" >07:30</option>
+<option value="08:00" >08:00</option>
+<option value="08:30" >08:30</option>
+<option value="09:00" >09:00</option>
+<option value="09:30" >09:30</option>
+<option value="10:00" >10:00</option>
+<option value="10:30" >10:30</option>
+<option value="11:00" >11:00</option>
+<option value="11:30" >11:30</option>
+<option value="12:00" >12:00</option>
+<option value="12:30" >12:30</option>
+<option value="13:00" >13:00</option>
+<option value="13:30" >13:30</option>
+<option value="14:00" >14:00</option>
+<option value="14:30" >14:30</option>
+<option value="15:00" >15:00</option>
+<option value="15:30" >15:30</option>
+<option value="16:00" >16:00</option>
+<option value="16:30" >16:30</option>
+<option value="17:00" >17:00</option>
+<option value="17:30" >17:30</option>
+<option value="18:00" >18:00</option>
+<option value="18:30" >18:30</option>
+<option value="19:00" >19:00</option>
+<option value="19:30" >19:30</option>
+<option value="20:00" >20:00</option>
+<option value="20:30" >20:30</option>
+<option value="21:00" >21:00</option>
+<option value="21:30" >21:30</option>
+<option value="22:00" >22:00</option>
+<option value="22:30" >22:30</option>
+<option value="23:00" >23:00</option>
+<option value="23:30" >23:30</option>
+
+      </select>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">🚛 INFORMACIÓN TRANSPORTADORA</h3>
+<div class="field">
+      <label for="Nombre_Transportadora">Nombre Transportadora <span class="req">*</span></label>
+      <input type="text" id="Nombre_Transportadora" name="Nombre Transportadora" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Nombre_y_Apellido_del_Conductor">Nombre y Apellido del Conductor <span class="req">*</span></label>
+      <input type="text" id="Nombre_y_Apellido_del_Conductor" name="Nombre y Apellido del Conductor" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Cédula_del_Conductor">Cédula del Conductor <span class="req">*</span></label>
+      <input type="number" id="Cédula_del_Conductor" name="Cédula del Conductor" required class="input">
+    </div>
+<div class="field">
+      <label for="Placa_Vehículo">Placa Vehículo <span class="req">*</span></label>
+      <input type="text" id="Placa_Vehículo" name="Placa Vehículo" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Placa_Remolque">Placa Remolque </label>
+      <input type="text" id="Placa_Remolque" name="Placa Remolque"  class="input" value="">
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">📦 INFORMACIÓN DEL CARGUE</h3>
+<div class="field">
+      <label for="Cliente">Cliente <span class="req">*</span></label>
+      <input type="text" id="Cliente" name="Cliente" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Contenedor_N">Contenedor Nº <span class="req">*</span></label>
+      <input type="text" id="Contenedor_N" name="Contenedor Nº" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Sello_Contenedor_Vacío_N">Sello Contenedor Vacío Nº <span class="req">*</span></label>
+      <input type="text" id="Sello_Contenedor_Vacío_N" name="Sello Contenedor Vacío Nº" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Sellos_Salida_N_1">Sellos Salida Nº 1 <span class="req">*</span></label>
+      <input type="text" id="Sellos_Salida_N_1" name="Sellos Salida Nº 1" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Sellos_Salida_N_2">Sellos Salida Nº 2 </label>
+      <input type="text" id="Sellos_Salida_N_2" name="Sellos Salida Nº 2"  class="input" value="">
+    </div>
+<div class="field">
+      <label for="Fecha_Cargue">Fecha Cargue <span class="req">*</span></label>
+      <input type="date" id="Fecha_Cargue" name="Fecha Cargue" required class="input">
+    </div>
+<div class="field">
+      <label for="Hora_Inicio_Cargue">Hora Inicio Cargue <span class="req">*</span></label>
+      <select id="Hora_Inicio_Cargue" name="Hora Inicio Cargue" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="00:00" >00:00</option>
+<option value="00:30" >00:30</option>
+<option value="01:00" >01:00</option>
+<option value="01:30" >01:30</option>
+<option value="02:00" >02:00</option>
+<option value="02:30" >02:30</option>
+<option value="03:00" >03:00</option>
+<option value="03:30" >03:30</option>
+<option value="04:00" >04:00</option>
+<option value="04:30" >04:30</option>
+<option value="05:00" >05:00</option>
+<option value="05:30" >05:30</option>
+<option value="06:00" >06:00</option>
+<option value="06:30" >06:30</option>
+<option value="07:00" >07:00</option>
+<option value="07:30" >07:30</option>
+<option value="08:00" >08:00</option>
+<option value="08:30" >08:30</option>
+<option value="09:00" >09:00</option>
+<option value="09:30" >09:30</option>
+<option value="10:00" >10:00</option>
+<option value="10:30" >10:30</option>
+<option value="11:00" >11:00</option>
+<option value="11:30" >11:30</option>
+<option value="12:00" >12:00</option>
+<option value="12:30" >12:30</option>
+<option value="13:00" >13:00</option>
+<option value="13:30" >13:30</option>
+<option value="14:00" >14:00</option>
+<option value="14:30" >14:30</option>
+<option value="15:00" >15:00</option>
+<option value="15:30" >15:30</option>
+<option value="16:00" >16:00</option>
+<option value="16:30" >16:30</option>
+<option value="17:00" >17:00</option>
+<option value="17:30" >17:30</option>
+<option value="18:00" >18:00</option>
+<option value="18:30" >18:30</option>
+<option value="19:00" >19:00</option>
+<option value="19:30" >19:30</option>
+<option value="20:00" >20:00</option>
+<option value="20:30" >20:30</option>
+<option value="21:00" >21:00</option>
+<option value="21:30" >21:30</option>
+<option value="22:00" >22:00</option>
+<option value="22:30" >22:30</option>
+<option value="23:00" >23:00</option>
+<option value="23:30" >23:30</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="Hora_Finalización_Cargue">Hora Finalización Cargue <span class="req">*</span></label>
+      <select id="Hora_Finalización_Cargue" name="Hora Finalización Cargue" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="00:00" >00:00</option>
+<option value="00:30" >00:30</option>
+<option value="01:00" >01:00</option>
+<option value="01:30" >01:30</option>
+<option value="02:00" >02:00</option>
+<option value="02:30" >02:30</option>
+<option value="03:00" >03:00</option>
+<option value="03:30" >03:30</option>
+<option value="04:00" >04:00</option>
+<option value="04:30" >04:30</option>
+<option value="05:00" >05:00</option>
+<option value="05:30" >05:30</option>
+<option value="06:00" >06:00</option>
+<option value="06:30" >06:30</option>
+<option value="07:00" >07:00</option>
+<option value="07:30" >07:30</option>
+<option value="08:00" >08:00</option>
+<option value="08:30" >08:30</option>
+<option value="09:00" >09:00</option>
+<option value="09:30" >09:30</option>
+<option value="10:00" >10:00</option>
+<option value="10:30" >10:30</option>
+<option value="11:00" >11:00</option>
+<option value="11:30" >11:30</option>
+<option value="12:00" >12:00</option>
+<option value="12:30" >12:30</option>
+<option value="13:00" >13:00</option>
+<option value="13:30" >13:30</option>
+<option value="14:00" >14:00</option>
+<option value="14:30" >14:30</option>
+<option value="15:00" >15:00</option>
+<option value="15:30" >15:30</option>
+<option value="16:00" >16:00</option>
+<option value="16:30" >16:30</option>
+<option value="17:00" >17:00</option>
+<option value="17:30" >17:30</option>
+<option value="18:00" >18:00</option>
+<option value="18:30" >18:30</option>
+<option value="19:00" >19:00</option>
+<option value="19:30" >19:30</option>
+<option value="20:00" >20:00</option>
+<option value="20:30" >20:30</option>
+<option value="21:00" >21:00</option>
+<option value="21:30" >21:30</option>
+<option value="22:00" >22:00</option>
+<option value="22:30" >22:30</option>
+<option value="23:00" >23:00</option>
+<option value="23:30" >23:30</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="Fecha_Salida">Fecha Salida <span class="req">*</span></label>
+      <input type="date" id="Fecha_Salida" name="Fecha Salida" required class="input">
+    </div>
+<div class="field">
+      <label for="Hora_de_Salida_Planta">Hora de Salida Planta <span class="req">*</span></label>
+      <select id="Hora_de_Salida_Planta" name="Hora de Salida Planta" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="00:00" >00:00</option>
+<option value="00:30" >00:30</option>
+<option value="01:00" >01:00</option>
+<option value="01:30" >01:30</option>
+<option value="02:00" >02:00</option>
+<option value="02:30" >02:30</option>
+<option value="03:00" >03:00</option>
+<option value="03:30" >03:30</option>
+<option value="04:00" >04:00</option>
+<option value="04:30" >04:30</option>
+<option value="05:00" >05:00</option>
+<option value="05:30" >05:30</option>
+<option value="06:00" >06:00</option>
+<option value="06:30" >06:30</option>
+<option value="07:00" >07:00</option>
+<option value="07:30" >07:30</option>
+<option value="08:00" >08:00</option>
+<option value="08:30" >08:30</option>
+<option value="09:00" >09:00</option>
+<option value="09:30" >09:30</option>
+<option value="10:00" >10:00</option>
+<option value="10:30" >10:30</option>
+<option value="11:00" >11:00</option>
+<option value="11:30" >11:30</option>
+<option value="12:00" >12:00</option>
+<option value="12:30" >12:30</option>
+<option value="13:00" >13:00</option>
+<option value="13:30" >13:30</option>
+<option value="14:00" >14:00</option>
+<option value="14:30" >14:30</option>
+<option value="15:00" >15:00</option>
+<option value="15:30" >15:30</option>
+<option value="16:00" >16:00</option>
+<option value="16:30" >16:30</option>
+<option value="17:00" >17:00</option>
+<option value="17:30" >17:30</option>
+<option value="18:00" >18:00</option>
+<option value="18:30" >18:30</option>
+<option value="19:00" >19:00</option>
+<option value="19:30" >19:30</option>
+<option value="20:00" >20:00</option>
+<option value="20:30" >20:30</option>
+<option value="21:00" >21:00</option>
+<option value="21:30" >21:30</option>
+<option value="22:00" >22:00</option>
+<option value="22:30" >22:30</option>
+<option value="23:00" >23:00</option>
+<option value="23:30" >23:30</option>
+
+      </select>
+    </div>
+<div class="field field-sino">
+      <label>¿EL CONTENEDOR ES APTO? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="¿EL CONTENEDOR ES APTO?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="¿EL CONTENEDOR ES APTO?" value="NO"  required> NO</label></div>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">🔍 VERIFICACIÓN DEL CONTENEDOR (Ítems 1-10)</h3>
+<div class="field field-sino">
+      <label>1. ¿Corresponde el último dígito al resultado de la fórmula de chequeo? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="1. ¿Corresponde el último dígito al resultado de la fórmula de chequeo?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="1. ¿Corresponde el último dígito al resultado de la fórmula de chequeo?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="1. ¿Corresponde el último dígito al resultado de la fórmula de chequeo?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>2. ¿Es el número interno del contenedor IGUAL al número externo? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="2. ¿Es el número interno del contenedor IGUAL al número externo?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="2. ¿Es el número interno del contenedor IGUAL al número externo?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="2. ¿Es el número interno del contenedor IGUAL al número externo?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>3. ¿Está el piso al nivel del marco de las puertas? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="3. ¿Está el piso al nivel del marco de las puertas?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="3. ¿Está el piso al nivel del marco de las puertas?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="3. ¿Está el piso al nivel del marco de las puertas?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>4. ¿Está el piso al nivel de la pared delantera? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="4. ¿Está el piso al nivel de la pared delantera?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="4. ¿Está el piso al nivel de la pared delantera?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="4. ¿Está el piso al nivel de la pared delantera?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>5. ¿Está el piso al nivel de la base de los paneles laterales? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="5. ¿Está el piso al nivel de la base de los paneles laterales?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="5. ¿Está el piso al nivel de la base de los paneles laterales?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="5. ¿Está el piso al nivel de la base de los paneles laterales?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>6. ¿El piso del contenedor es totalmente de madera? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="6. ¿El piso del contenedor es totalmente de madera?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="6. ¿El piso del contenedor es totalmente de madera?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="6. ¿El piso del contenedor es totalmente de madera?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>7. ¿El piso tiene combinación de paneles de metal y madera? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="7. ¿El piso tiene combinación de paneles de metal y madera?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="7. ¿El piso tiene combinación de paneles de metal y madera?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="7. ¿El piso tiene combinación de paneles de metal y madera?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>8. ¿Son visibles los soportes superiores externos de suspensión? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="8. ¿Son visibles los soportes superiores externos de suspensión?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="8. ¿Son visibles los soportes superiores externos de suspensión?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="8. ¿Son visibles los soportes superiores externos de suspensión?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>9. ¿Son visibles las proyecciones interiores de los bloques elevadores? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="9. ¿Son visibles las proyecciones interiores de los bloques elevadores?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="9. ¿Son visibles las proyecciones interiores de los bloques elevadores?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="9. ¿Son visibles las proyecciones interiores de los bloques elevadores?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>10. ¿Están los orificios de ventilación a menos de 50cm de la pared? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="10. ¿Están los orificios de ventilación a menos de 50cm de la pared?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="10. ¿Están los orificios de ventilación a menos de 50cm de la pared?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="10. ¿Están los orificios de ventilación a menos de 50cm de la pared?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">🔍 VERIFICACIÓN DEL CONTENEDOR (Ítems 11-20)</h3>
+<div class="field field-sino">
+      <label>11. ¿Son visibles los bloques esquineros? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="11. ¿Son visibles los bloques esquineros?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="11. ¿Son visibles los bloques esquineros?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="11. ¿Son visibles los bloques esquineros?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>12. ¿Las corrugaciones entre paneles y pared frontal son visibles? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="12. ¿Las corrugaciones entre paneles y pared frontal son visibles?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="12. ¿Las corrugaciones entre paneles y pared frontal son visibles?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="12. ¿Las corrugaciones entre paneles y pared frontal son visibles?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>13. ¿El techo exteriormente está por debajo de los bloques esquineros? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="13. ¿El techo exteriormente está por debajo de los bloques esquineros?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="13. ¿El techo exteriormente está por debajo de los bloques esquineros?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="13. ¿El techo exteriormente está por debajo de los bloques esquineros?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>14. ¿Las puertas externamente tienen ondulaciones? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="14. ¿Las puertas externamente tienen ondulaciones?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="14. ¿Las puertas externamente tienen ondulaciones?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="14. ¿Las puertas externamente tienen ondulaciones?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>15. ¿Las puertas internamente tienen 3 ondulaciones verticales? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="15. ¿Las puertas internamente tienen 3 ondulaciones verticales?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="15. ¿Las puertas internamente tienen 3 ondulaciones verticales?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="15. ¿Las puertas internamente tienen 3 ondulaciones verticales?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>16. ¿Las puertas internamente tienen ondulaciones horizontales? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="16. ¿Las puertas internamente tienen ondulaciones horizontales?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="16. ¿Las puertas internamente tienen ondulaciones horizontales?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="16. ¿Las puertas internamente tienen ondulaciones horizontales?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>17. ¿Tienen las puertas espacios abiertos en partes interna, superior e inferior? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="17. ¿Tienen las puertas espacios abiertos en partes interna, superior e inferior?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="17. ¿Tienen las puertas espacios abiertos en partes interna, superior e inferior?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="17. ¿Tienen las puertas espacios abiertos en partes interna, superior e inferior?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>18. ¿Tiene el contenedor señales de pintura fresca? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="18. ¿Tiene el contenedor señales de pintura fresca?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="18. ¿Tiene el contenedor señales de pintura fresca?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="18. ¿Tiene el contenedor señales de pintura fresca?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field">
+      <label for="18a_Si_hay_pintura_fresca,_especifique_d">18a. Si hay pintura fresca, especifique dónde </label>
+      <input type="text" id="18a_Si_hay_pintura_fresca,_especifique_d" name="18a. Si hay pintura fresca, especifique dónde"  class="input" value="">
+    </div>
+<div class="field field-sino">
+      <label>19. ¿El sonido metálico en vigas y travesaños es grave y sin eco de retorno? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="19. ¿El sonido metálico en vigas y travesaños es grave y sin eco de retorno?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="19. ¿El sonido metálico en vigas y travesaños es grave y sin eco de retorno?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="19. ¿El sonido metálico en vigas y travesaños es grave y sin eco de retorno?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>20. ¿La pintura aplicada es uniforme? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="20. ¿La pintura aplicada es uniforme?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="20. ¿La pintura aplicada es uniforme?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="20. ¿La pintura aplicada es uniforme?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field">
+      <label for="20a_Si_la_pintura_NO_es_uniforme,_especi">20a. Si la pintura NO es uniforme, especifique </label>
+      <input type="text" id="20a_Si_la_pintura_NO_es_uniforme,_especi" name="20a. Si la pintura NO es uniforme, especifique"  class="input" value="">
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">🔍 VERIFICACIÓN DEL CONTENEDOR (Ítems 21-31)</h3>
+<div class="field field-sino">
+      <label>21. ¿Tiene señales de quemadura o soldadura en paredes, techo o puertas? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="21. ¿Tiene señales de quemadura o soldadura en paredes, techo o puertas?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="21. ¿Tiene señales de quemadura o soldadura en paredes, techo o puertas?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="21. ¿Tiene señales de quemadura o soldadura en paredes, techo o puertas?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field">
+      <label for="21a_Si_hay_quemaduras_soldaduras,_especi">21a. Si hay quemaduras/soldaduras, especifique dónde </label>
+      <input type="text" id="21a_Si_hay_quemaduras_soldaduras,_especi" name="21a. Si hay quemaduras/soldaduras, especifique dónde"  class="input" value="">
+    </div>
+<div class="field field-sino">
+      <label>22. ¿Presenta el vehículo perforaciones en áreas externas o internas? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="22. ¿Presenta el vehículo perforaciones en áreas externas o internas?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="22. ¿Presenta el vehículo perforaciones en áreas externas o internas?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="22. ¿Presenta el vehículo perforaciones en áreas externas o internas?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>23. ¿Las compuertas se encuentran en buen estado? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="23. ¿Las compuertas se encuentran en buen estado?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="23. ¿Las compuertas se encuentran en buen estado?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="23. ¿Las compuertas se encuentran en buen estado?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>24. ¿El interior del vehículo está libre de olores? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="24. ¿El interior del vehículo está libre de olores?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="24. ¿El interior del vehículo está libre de olores?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="24. ¿El interior del vehículo está libre de olores?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>25. ¿El interior está limpio y seco para transportar alimentos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="25. ¿El interior está limpio y seco para transportar alimentos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="25. ¿El interior está limpio y seco para transportar alimentos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="25. ¿El interior está limpio y seco para transportar alimentos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>26. ¿El interior está libre de fuentes de contaminación cruzada? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="26. ¿El interior está libre de fuentes de contaminación cruzada?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="26. ¿El interior está libre de fuentes de contaminación cruzada?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="26. ¿El interior está libre de fuentes de contaminación cruzada?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>27. ¿El vehículo es apto para el transporte de alimentos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="27. ¿El vehículo es apto para el transporte de alimentos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="27. ¿El vehículo es apto para el transporte de alimentos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="27. ¿El vehículo es apto para el transporte de alimentos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field">
+      <label for="28_Las_bisagras_del_contenedor_son">28. Las bisagras del contenedor son <span class="req">*</span></label>
+      <select id="28_Las_bisagras_del_contenedor_son" name="28. Las bisagras del contenedor son" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="Internas" >Internas</option>
+<option value="Externas" >Externas</option>
+<option value="Ambas" >Ambas</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="29_Cierres_puerta_derecha_exterior">29. Cierres puerta derecha exterior <span class="req">*</span></label>
+      <select id="29_Cierres_puerta_derecha_exterior" name="29. Cierres puerta derecha exterior" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="Tornillos" >Tornillos</option>
+<option value="Tuercas" >Tuercas</option>
+<option value="Remaches" >Remaches</option>
+<option value="Combinación" >Combinación</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="30_Puerta_derecha_interior">30. Puerta derecha interior <span class="req">*</span></label>
+      <select id="30_Puerta_derecha_interior" name="30. Puerta derecha interior" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="Tornillos" >Tornillos</option>
+<option value="Tuercas" >Tuercas</option>
+<option value="Remaches" >Remaches</option>
+<option value="Combinación" >Combinación</option>
+
+      </select>
+    </div>
+<div class="field">
+      <label for="31_Estado_mecanismos_de_cierre_(bisagras">31. Estado mecanismos de cierre (bisagras, manijas, barras, cerrojos) <span class="req">*</span></label>
+      <select id="31_Estado_mecanismos_de_cierre_(bisagras" name="31. Estado mecanismos de cierre (bisagras, manijas, barras, cerrojos)" required class="input">
+        <option value="">-- Seleccionar --</option>
+        <option value="Excelente" >Excelente</option>
+<option value="Bueno" >Bueno</option>
+<option value="Regular" >Regular</option>
+<option value="Malo" >Malo</option>
+
+      </select>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">🚚 INSPECCIÓN REMOLQUE Y VEHÍCULO (Ítems 32-46)</h3>
+<div class="field field-sino">
+      <label>32. ¿Chasis libre de paquetes con sustancias ilícitas? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="32. ¿Chasis libre de paquetes con sustancias ilícitas?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="32. ¿Chasis libre de paquetes con sustancias ilícitas?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="32. ¿Chasis libre de paquetes con sustancias ilícitas?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>33. ¿Rompevientos, deflectores y techo libres de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="33. ¿Rompevientos, deflectores y techo libres de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="33. ¿Rompevientos, deflectores y techo libres de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="33. ¿Rompevientos, deflectores y techo libres de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>34. ¿Cabina, puertas y compartimentos libres de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="34. ¿Cabina, puertas y compartimentos libres de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="34. ¿Cabina, puertas y compartimentos libres de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="34. ¿Cabina, puertas y compartimentos libres de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>35. ¿Parachoques y área del motor libres de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="35. ¿Parachoques y área del motor libres de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="35. ¿Parachoques y área del motor libres de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="35. ¿Parachoques y área del motor libres de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>36. ¿Llantas y rines sin protuberancias que indiquen contaminación? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="36. ¿Llantas y rines sin protuberancias que indiquen contaminación?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="36. ¿Llantas y rines sin protuberancias que indiquen contaminación?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="36. ¿Llantas y rines sin protuberancias que indiquen contaminación?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>37. ¿Tanque de combustible sin bolsa plástica en la tapa? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="37. ¿Tanque de combustible sin bolsa plástica en la tapa?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="37. ¿Tanque de combustible sin bolsa plástica en la tapa?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="37. ¿Tanque de combustible sin bolsa plástica en la tapa?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>38. ¿El sonido en tanque de aire es grave y sin eco de retorno? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="38. ¿El sonido en tanque de aire es grave y sin eco de retorno?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="38. ¿El sonido en tanque de aire es grave y sin eco de retorno?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="38. ¿El sonido en tanque de aire es grave y sin eco de retorno?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>39. ¿Compartimentos de herramientas libres de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="39. ¿Compartimentos de herramientas libres de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="39. ¿Compartimentos de herramientas libres de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="39. ¿Compartimentos de herramientas libres de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>40. ¿Caja de batería libre de sustancias ilícitas? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="40. ¿Caja de batería libre de sustancias ilícitas?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="40. ¿Caja de batería libre de sustancias ilícitas?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="40. ¿Caja de batería libre de sustancias ilícitas?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>41. ¿Área quinta rueda y patín del remolque libres de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="41. ¿Área quinta rueda y patín del remolque libres de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="41. ¿Área quinta rueda y patín del remolque libres de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="41. ¿Área quinta rueda y patín del remolque libres de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>42. ¿Pata mecánica del remolque libre de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="42. ¿Pata mecánica del remolque libre de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="42. ¿Pata mecánica del remolque libre de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="42. ¿Pata mecánica del remolque libre de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>43. ¿Parte inferior del remolque libre de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="43. ¿Parte inferior del remolque libre de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="43. ¿Parte inferior del remolque libre de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="43. ¿Parte inferior del remolque libre de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>44. ¿Pared delantera del remolque libre de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="44. ¿Pared delantera del remolque libre de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="44. ¿Pared delantera del remolque libre de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="44. ¿Pared delantera del remolque libre de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>45. ¿Lado izquierdo del remolque libre de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="45. ¿Lado izquierdo del remolque libre de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="45. ¿Lado izquierdo del remolque libre de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="45. ¿Lado izquierdo del remolque libre de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<div class="field field-sino">
+      <label>46. ¿Lado derecho del remolque libre de paquetes ilícitos? <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="46. ¿Lado derecho del remolque libre de paquetes ilícitos?" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="46. ¿Lado derecho del remolque libre de paquetes ilícitos?" value="NO"  required> NO</label><label class="radio-btn btn-nd"><input type="radio" name="46. ¿Lado derecho del remolque libre de paquetes ilícitos?" value="NO DISPONIBLE"  required> NO DISPONIBLE</label></div>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">👥 PERSONAS QUE INTERVIENEN</h3>
+<div class="field">
+      <label for="Nombre_y_Apellido_del_Inspector">Nombre y Apellido del Inspector <span class="req">*</span></label>
+      <input type="text" id="Nombre_y_Apellido_del_Inspector" name="Nombre y Apellido del Inspector" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Cédula_del_Inspector">Cédula del Inspector <span class="req">*</span></label>
+      <input type="number" id="Cédula_del_Inspector" name="Cédula del Inspector" required class="input">
+    </div>
+<div class="field">
+      <label for="Nombre_y_Apellido_del_Funcionario_de_Seg">Nombre y Apellido del Funcionario de Seguridad <span class="req">*</span></label>
+      <input type="text" id="Nombre_y_Apellido_del_Funcionario_de_Seg" name="Nombre y Apellido del Funcionario de Seguridad" required class="input" value="">
+    </div>
+<div class="field">
+      <label for="Cédula_del_Funcionario_de_Seguridad">Cédula del Funcionario de Seguridad <span class="req">*</span></label>
+      <input type="number" id="Cédula_del_Funcionario_de_Seguridad" name="Cédula del Funcionario de Seguridad" required class="input">
+    </div>
+<div class="field">
+      <label for="Observaciones_generales">Observaciones generales </label>
+      <textarea id="Observaciones_generales" name="Observaciones generales"  class="input" rows="3"></textarea>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">📄 VERIFICACIÓN DE DOCUMENTOS</h3>
+<div class="field field-sino">
+      <label>Doc 1 - Comodato <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 1 - Comodato" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 1 - Comodato" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 2 - Inspección contenedor por parte de la naviera <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 2 - Inspección contenedor por parte de la naviera" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 2 - Inspección contenedor por parte de la naviera" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 3 - Inspección del contenedor por parte de la transportadora <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 3 - Inspección del contenedor por parte de la transportadora" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 3 - Inspección del contenedor por parte de la transportadora" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 4 - Orden de cargue <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 4 - Orden de cargue" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 4 - Orden de cargue" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 5 - Carta de responsabilidad de la transportadora <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 5 - Carta de responsabilidad de la transportadora" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 5 - Carta de responsabilidad de la transportadora" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 6 - Cédula de ciudadanía del conductor <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 6 - Cédula de ciudadanía del conductor" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 6 - Cédula de ciudadanía del conductor" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 7 - Inspección del remolque y vehículo <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 7 - Inspección del remolque y vehículo" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 7 - Inspección del remolque y vehículo" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 8 - Antecedentes del conductor <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 8 - Antecedentes del conductor" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 8 - Antecedentes del conductor" value="NO"  required> NO</label></div>
+    </div>
+<div class="field field-sino">
+      <label>Doc 9 - Manifiesto Electrónico de carga <span class="req">*</span></label>
+      <div class="radio-group"><label class="radio-btn btn-si"><input type="radio" name="Doc 9 - Manifiesto Electrónico de carga" value="SI"  required> SI</label><label class="radio-btn btn-no"><input type="radio" name="Doc 9 - Manifiesto Electrónico de carga" value="NO"  required> NO</label></div>
+    </div>
+<h3 style="color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:4px">📷 REGISTRO FOTOGRÁFICO</h3><p style="color:#555;font-size:13px">Tome y adjunte cada fotografía según el ítem indicado. Formatos permitidos: JPG, PNG. Máximo 5MB por foto.</p>
+<div class="field field-foto">
+      <label>Foto 1 - Conductor al lado de la placa <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 1 - Conductor al lado de la placa" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_1_-_Conductor_al_lado_de_la_placa')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 1 - Conductor al lado de la placa_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_1_-_Conductor_al_lado_de_la_placa')">
+        </label>
+      </div>
+      <div id="preview_Foto_1_-_Conductor_al_lado_de_la_placa" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 2 - Número remolque <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 2 - Número remolque" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_2_-_Número_remolque')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 2 - Número remolque_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_2_-_Número_remolque')">
+        </label>
+      </div>
+      <div id="preview_Foto_2_-_Número_remolque" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 3 - Contenedor con sello de ingreso <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 3 - Contenedor con sello de ingreso" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_3_-_Contenedor_con_sello_de_ingreso')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 3 - Contenedor con sello de ingreso_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_3_-_Contenedor_con_sello_de_ingreso')">
+        </label>
+      </div>
+      <div id="preview_Foto_3_-_Contenedor_con_sello_de_ingreso" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 4 - Contenedor vacío <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 4 - Contenedor vacío" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_4_-_Contenedor_vacío')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 4 - Contenedor vacío_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_4_-_Contenedor_vacío')">
+        </label>
+      </div>
+      <div id="preview_Foto_4_-_Contenedor_vacío" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 5 - No. interno del contenedor <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 5 - No. interno del contenedor" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_5_-_No_interno_del_contenedor')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 5 - No. interno del contenedor_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_5_-_No_interno_del_contenedor')">
+        </label>
+      </div>
+      <div id="preview_Foto_5_-_No_interno_del_contenedor" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 6 - Inicio del cargue <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 6 - Inicio del cargue" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_6_-_Inicio_del_cargue')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 6 - Inicio del cargue_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_6_-_Inicio_del_cargue')">
+        </label>
+      </div>
+      <div id="preview_Foto_6_-_Inicio_del_cargue" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 7 - Contenedor a mitad de cargue <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 7 - Contenedor a mitad de cargue" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_7_-_Contenedor_a_mitad_de_cargue')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 7 - Contenedor a mitad de cargue_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_7_-_Contenedor_a_mitad_de_cargue')">
+        </label>
+      </div>
+      <div id="preview_Foto_7_-_Contenedor_a_mitad_de_cargue" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 8 - Finalización del cargue <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 8 - Finalización del cargue" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_8_-_Finalización_del_cargue')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 8 - Finalización del cargue_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_8_-_Finalización_del_cargue')">
+        </label>
+      </div>
+      <div id="preview_Foto_8_-_Finalización_del_cargue" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 9 - Puerta cerrada con No. contenedor <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 9 - Puerta cerrada con No. contenedor" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_9_-_Puerta_cerrada_con_No_contenedo')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 9 - Puerta cerrada con No. contenedor_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_9_-_Puerta_cerrada_con_No_contenedo')">
+        </label>
+      </div>
+      <div id="preview_Foto_9_-_Puerta_cerrada_con_No_contenedo" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 10 - Sellos de despacho <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 10 - Sellos de despacho" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_10_-_Sellos_de_despacho')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 10 - Sellos de despacho_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_10_-_Sellos_de_despacho')">
+        </label>
+      </div>
+      <div id="preview_Foto_10_-_Sellos_de_despacho" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 11 - Techo contenedor <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 11 - Techo contenedor" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_11_-_Techo_contenedor')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 11 - Techo contenedor_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_11_-_Techo_contenedor')">
+        </label>
+      </div>
+      <div id="preview_Foto_11_-_Techo_contenedor" class="foto-preview"></div>
+    </div>
+<div class="field field-foto">
+      <label>Foto 12 - Personas que intervienen en el cargue <span class="req">*</span></label>
+      <div class="foto-btns">
+        <label class="btn-foto btn-camara">
+          📷 Tomar foto
+          <input type="file" name="Foto 12 - Personas que intervienen en el cargue" accept="image/*" capture="environment" required class="file-hidden" onchange="previewFoto(this, 'preview_Foto_12_-_Personas_que_intervienen_en_el')">
+        </label>
+        <label class="btn-foto btn-galeria">
+          🖼️ Galería
+          <input type="file" name="Foto 12 - Personas que intervienen en el cargue_galeria" accept="image/*" class="file-hidden" onchange="previewFoto(this, 'preview_Foto_12_-_Personas_que_intervienen_en_el')">
+        </label>
+      </div>
+      <div id="preview_Foto_12_-_Personas_que_intervienen_en_el" class="foto-preview"></div>
+    </div>
+
+    <div class="submit-area">
+      <button type="submit" class="btn-submit" id="btnEnviar">✅ Enviar Inspección</button>
+      <div class="progress" id="progreso">Enviando datos, por favor espere...</div>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast">✅ Inspección enviada correctamente</div>
+
+<script>
+  const WEBHOOK_URL = 'PENDIENTE_URL_WEBHOOK_N8N';
+
+  function previewFoto(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.innerHTML = '<img src="' + e.target.result + '" alt="Vista previa">';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  document.getElementById('formInspeccion').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnEnviar');
+    const progreso = document.getElementById('progreso');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    progreso.style.display = 'block';
+
+    const formData = new FormData(this);
+
+    try {
+      const resp = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        body: formData
+      });
+      if (resp.ok) {
+        document.getElementById('toast').style.display = 'block';
+        setTimeout(() => document.getElementById('toast').style.display = 'none', 4000);
+        this.reset();
+        document.querySelectorAll('.foto-preview').forEach(p => p.innerHTML = '');
+      } else {
+        alert('Error al enviar. Intente nuevamente.');
+      }
+    } catch(err) {
+      alert('Error de conexión: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✅ Enviar Inspección';
+      progreso.style.display = 'none';
+    }
+  });
+</script>
+
+</body>
+</html>
