@@ -777,21 +777,22 @@
     sel.addEventListener('change', () => colorSelect(sel));
   });
 
-  // Mapa para guardar blobs comprimidos por campo
-  const fotosComprimidas = {};
+  const fotosBase64 = {};
 
   function comprimirImagen(file, maxWidth, quality) {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = function(e) {
         const img = new Image();
-        img.onload = () => {
+        img.onload = function() {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
           if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-          canvas.width = w; canvas.height = h;
+          canvas.width = w;
+          canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl.split(',')[1]);
         };
         img.src = e.target.result;
       };
@@ -804,62 +805,64 @@
     if (input.files && input.files[0]) {
       const file = input.files[0];
       const fieldName = input.name;
-      // Comprimir y guardar
-      comprimirImagen(file, 1024, 0.7).then(blob => {
-        fotosComprimidas[fieldName] = { blob, name: file.name };
-        const url = URL.createObjectURL(blob);
-        const kb = Math.round(blob.size / 1024);
-        preview.innerHTML = '<img src="' + url + '" alt="Vista previa"><div class="foto-nombre">📎 ' + file.name + ' (' + kb + ' KB)</div>';
+      comprimirImagen(file, 1024, 0.7).then(function(base64) {
+        fotosBase64[fieldName] = base64;
+        const url = URL.createObjectURL(file);
+        const kb = Math.round(base64.length * 0.75 / 1024);
+        preview.innerHTML = '<img src="' + url + '" alt="Vista previa"><div class="foto-nombre">Foto cargada: ' + kb + ' KB</div>';
       });
     }
   }
 
-  document.getElementById('formInspeccion').addEventListener('submit', async function(e) {
+  document.getElementById('formInspeccion').addEventListener('submit', function(e) {
     e.preventDefault();
     const btn = document.getElementById('btnEnviar');
     const progreso = document.getElementById('progreso');
+
+    const fotosCargadas = Object.keys(fotosBase64).length;
+    if (fotosCargadas < 12) {
+      alert('Faltan ' + (12 - fotosCargadas) + ' foto(s). Por favor adjunte todas las fotos.');
+      return;
+    }
+
     btn.disabled = true;
     btn.textContent = 'Enviando...';
     progreso.style.display = 'block';
 
-    // Construir FormData con fotos comprimidas
-    const formData = new FormData(this);
+    const formData = new FormData(document.getElementById('formInspeccion'));
+    const payload = {};
+    formData.forEach(function(value, key) {
+      payload[key] = value;
+    });
 
-    // Reemplazar fotos originales por comprimidas
-    for (const [fieldName, { blob, name }] of Object.entries(fotosComprimidas)) {
-      const compressedName = name.replace(/\.[^.]+$/, '') + '_c.jpg';
-      formData.set(fieldName, blob, compressedName);
-    }
+    Object.keys(fotosBase64).forEach(function(key) {
+      payload[key] = fotosBase64[key];
+    });
 
-    // Validar que todas las fotos obligatorias estén cargadas
-    const fotosCargadas = Object.keys(fotosComprimidas).length;
-    if (fotosCargadas < 12) {
-      alert('Por favor adjunte las ' + (12 - fotosCargadas) + ' foto(s) faltante(s) antes de enviar.');
-      btn.disabled = false;
-      btn.textContent = '✅ Enviar Inspección';
-      progreso.style.display = 'none';
-      return;
-    }
-
-    try {
-      const resp = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+    fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(resp) {
       if (resp.ok) {
         document.getElementById('toast').style.display = 'block';
-        setTimeout(() => document.getElementById('toast').style.display = 'none', 5000);
-        this.reset();
+        setTimeout(function() { document.getElementById('toast').style.display = 'none'; }, 5000);
+        document.getElementById('formInspeccion').reset();
         document.querySelectorAll('.select-sino').forEach(sel => colorSelect(sel));
-        document.querySelectorAll('.foto-preview').forEach(p => p.innerHTML = '');
-        Object.keys(fotosComprimidas).forEach(k => delete fotosComprimidas[k]);
+        document.querySelectorAll('.foto-preview').forEach(function(p) { p.innerHTML = ''; });
+        Object.keys(fotosBase64).forEach(function(k) { delete fotosBase64[k]; });
       } else {
-        alert('Error al enviar. Código: ' + resp.status);
+        resp.text().then(function(txt) {
+          alert('Error al enviar. Codigo: ' + resp.status);
+        });
       }
-    } catch(err) {
-      alert('Error de conexión: ' + err.message);
-    } finally {
+    }).catch(function(err) {
+      alert('Error de conexion: ' + err.message);
+    }).finally(function() {
       btn.disabled = false;
-      btn.textContent = '✅ Enviar Inspección';
+      btn.textContent = 'Enviar Inspeccion';
       progreso.style.display = 'none';
-    }
+    });
   });
 </script>
 
